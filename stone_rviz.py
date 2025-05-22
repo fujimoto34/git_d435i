@@ -33,9 +33,9 @@ class StoneMarkerPublisher(Node):
         marker.action = Marker.ADD
         #marker.lifetime = Duration(sec=1)
         marker.pose.position = msg
-        marker.scale.x = 0.1
-        marker.scale.y = 0.1
-        marker.scale.z = 0.1
+        marker.scale.x = 0.4
+        marker.scale.y = 0.4
+        marker.scale.z = 0.4
         marker.pose.orientation.x = 0.0
         marker.pose.orientation.y = 0.0
         marker.pose.orientation.z = 0.0
@@ -57,10 +57,10 @@ class StoneMarkerPublisher(Node):
         #marker.lifetime = Duration(sec=1)
         marker.pose.position.x = msg.x
         marker.pose.position.y = msg.y
-        marker.pose.position.z = msg.z + 0.1
+        marker.pose.position.z = msg.z + 0.4
         #marker.scale.x = 0.1  # 文字の幅(無効？)
         #marker.scale.y = 0.1  # 文字の高さ(無効？)
-        marker.scale.z = 0.1  # 文字のサイズ
+        marker.scale.z = 0.4  # 文字のサイズ
         marker.pose.orientation.x = 0.0
         marker.pose.orientation.y = 0.0
         marker.pose.orientation.z = 0.0
@@ -75,9 +75,9 @@ class StoneMarkerPublisher(Node):
     # 原点の座標軸にX,Y,Zのラベルを表示
     def publish_axis_labels(self):
         labels = [
-            ("X", 1.0, 0.0, 0.0, 0, (1.0, 0.0, 0.0)),
-            ("Y", 0.0, 1.0, 0.0, 1, (0.0, 1.0, 0.0)),
-            ("Z", 0.0, 0.0, 1.0, 2, (0.0, 0.0, 1.0)),
+            ("X", 1.5, 0.0, 0.0, 0, (1.0, 0.0, 0.0)),
+            ("Y", 0.0, 1.5, 0.0, 1, (0.0, 1.0, 0.0)),
+            ("Z", 0.0, 0.0, 1.5, 2, (0.0, 0.0, 1.0)),
         ]
         for label, x, y, z, id, (r, g, b) in labels:
             marker = Marker()
@@ -92,7 +92,7 @@ class StoneMarkerPublisher(Node):
             marker.pose.position.z = z
             #marker.scale.x = 0.1  # 文字の幅(無効？)
             #marker.scale.y = 0.1  # 文字の高さ(無効？)
-            marker.scale.z = 0.3  # 文字のサイズ
+            marker.scale.z = 0.5  # 文字のサイズ
             marker.color.r = r
             marker.color.g = g
             marker.color.b = b
@@ -113,9 +113,9 @@ class StoneMarkerPublisher(Node):
         marker.pose.position.x = 0.0
         marker.pose.position.y = 0.0
         marker.pose.position.z = 0.0
-        marker.scale.x = 0.7
-        marker.scale.y = 0.1
-        marker.scale.z = 0.1
+        marker.scale.x = 1.3
+        marker.scale.y = 0.15
+        marker.scale.z = 0.15
         marker.pose.orientation.x = 0.0
         marker.pose.orientation.y = 1.0
         marker.pose.orientation.z = 0.0
@@ -123,7 +123,7 @@ class StoneMarkerPublisher(Node):
         marker.color.r = 1.0
         marker.color.g = 1.0
         marker.color.b = 1.0
-        marker.color.a = 0.3
+        marker.color.a = 0.8
         self.pub_camera_arrow.publish(marker)
 
 # 初期化
