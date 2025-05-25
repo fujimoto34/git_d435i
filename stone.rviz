@@ -12,6 +12,9 @@ Panels:
         - /Marker2
         - /Marker3
         - /Marker4
+        - /Marker5
+        - /Marker6
+        - /Marker6/Topic1
       Splitter Ratio: 0.5
     Tree Height: 403
   - Class: rviz_common/Selection
@@ -48,7 +51,7 @@ Visualization Manager:
       Offset:
         X: 0
         Y: 0
-        Z: 0
+        Z: -2
       Plane: XY
       Plane Cell Count: 10
       Reference Frame: <Fixed Frame>
@@ -64,7 +67,7 @@ Visualization Manager:
       Enabled: true
       Name: Marker
       Namespaces:
-        stone: true
+        {}
       Topic:
         Depth: 5
         Durability Policy: Volatile
@@ -103,7 +106,7 @@ Visualization Manager:
       Enabled: true
       Name: Marker
       Namespaces:
-        stone_point: true
+        {}
       Topic:
         Depth: 5
         Durability Policy: Volatile
@@ -111,6 +114,32 @@ Visualization Manager:
         History Policy: Keep Last
         Reliability Policy: Reliable
         Value: /stone_point_marker
+      Value: true
+    - Class: rviz_default_plugins/Marker
+      Enabled: true
+      Name: Marker
+      Namespaces:
+        vehicle: true
+      Topic:
+        Depth: 5
+        Durability Policy: Volatile
+        Filter size: 10
+        History Policy: Keep Last
+        Reliability Policy: Reliable
+        Value: /vehicle_marker
+      Value: true
+    - Class: rviz_default_plugins/Marker
+      Enabled: true
+      Name: Marker
+      Namespaces:
+        rectangle_frame: true
+      Topic:
+        Depth: 5
+        Durability Policy: Volatile
+        Filter size: 10
+        History Policy: Keep Last
+        Reliability Policy: Reliable
+        Value: /rectangle_frame_marker
       Value: true
   Enabled: true
   Global Options:
@@ -158,7 +187,7 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz_default_plugins/Orbit
-      Distance: 13.904362678527832
+      Distance: 10
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
@@ -168,15 +197,15 @@ Visualization Manager:
         X: 0
         Y: 0
         Z: 0
-      Focal Shape Fixed Size: true
+      Focal Shape Fixed Size: false
       Focal Shape Size: 0.05000000074505806
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 0.37479808926582336
+      Pitch: 0.12979714572429657
       Target Frame: <Fixed Frame>
       Value: Orbit (rviz)
-      Yaw: 4.6635212898254395
+      Yaw: 4.523571014404297
     Saved: ~
 Window Geometry:
   Displays:

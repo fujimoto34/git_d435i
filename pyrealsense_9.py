@@ -1,5 +1,4 @@
 # 検知した石までの距離と3次元座標(グローバル座標系)をパブリッシュする(フィルターあり)
-# (ロール(横の傾き)の座標変換がうまくいってない)。
 # python3 pyrealsense_9.py
 
 import pyrealsense2 as rs
@@ -16,7 +15,7 @@ from geometry_msgs.msg import Point
 import time
 
 
-model = YOLO('runs/detect/train3/weights/best.pt')
+model = YOLO('best.pt')
 #print(model.names)
 
 # カメラの設定
@@ -32,7 +31,7 @@ align = rs.align(rs.stream.color)
 
 # ROS2でPublisherを作成
 rclpy.init()
-node = Node("stone1")
+node = Node("stone2")
 pub_d = node.create_publisher(Float64, "stone_dis", 10)
 pub_xyz = node.create_publisher(Point, "stone_xyz", 10)
 msg_d = Float64()
@@ -100,33 +99,33 @@ try:
         # 加速度データ表示
         ax, ay, az = accel_data.x, accel_data.y, accel_data.z
         #print(f"加速度センサ値: x={ax:.3f}, y={ay:.3f}, z={az:.3f}")  # RealSenseの加速度の座標は、左がx正、上がy正、後ろがz正
-        # 加速度座標を一般的な右手系xyz座標での座標に変換
-        ax_ = az
+        # RealSenseの加速度座標をNED座標系の加速度に変換
+        ax_ = -az
         ay_ = -ax
-        az_ = ay
-        # 一般的な右手系座標での傾き(ピッチ・ロール)の計算
-        pitch_rad = np.arctan(-ax_ / np.sqrt((-ay_)**2 + az_**2))
+        az_ = -ay
+        # NED座標系での傾き(ピッチ・ロール)の計算
+        pitch_rad = np.arctan(-ax_ / np.sqrt((ay_)**2 + az_**2))
         roll_rad = np.arctan(ay_ / az_)
         pitch = pitch_rad * 180 / np.pi
         roll = roll_rad * 180 / np.pi
-        # 傾き表示(一般的な右手系座標視点)
-        print(f"カメラのピッチ角（前後の傾き）: {pitch:.2f} 度")  # 前が正(y軸周りにxからzに向かう方向が正)
-        print(f"カメラのロール角（左右の傾き）: {roll:.2f} 度")  # 左が正(x軸周りにyからzに向かう方向が正)
-        # x軸回り(ロール)の回転行列(一般的な右手系のもの)
-        R_pitch = np.array([
-            [1, 0, 0],
-            [0, np.cos(-roll_rad), -np.sin(-roll_rad)],
-            [0, np.sin(-roll_rad),  np.cos(-roll_rad)],
-        ])
-        # y軸回り(ピッチ)の回転行列(一般的な右手系のもの)
+        # 傾き表示(NED座標系)
+        print(f"カメラのピッチ角（前後の傾き）: {pitch:.2f} 度")  # 後ろが正(y軸周りにzからxに向かう方向が正)
+        print(f"カメラのロール角（左右の傾き）: {roll:.2f} 度")  # 右が正(x軸周りにyからzに向かう方向が正)
+        # x軸回り(ロール)の回転行列(右手系のオブジェクト回転のもの(観測系の回転ではなく))
         R_roll = np.array([
-            [ np.cos(-pitch_rad), 0, np.sin(-pitch_rad)],
+            [1, 0, 0],
+            [0, np.cos(roll_rad), -np.sin(roll_rad)],
+            [0, np.sin(roll_rad),  np.cos(roll_rad)],
+        ])
+        # y軸回り(ピッチ)の回転行列(右手系のオブジェクト回転のもの(観測系の回転ではなく))
+        R_pitch = np.array([
+            [ np.cos(pitch_rad), 0, np.sin(pitch_rad)],
             [0, 1, 0],
-            [-np.sin(-pitch_rad), 0, np.cos(-pitch_rad)],
+            [-np.sin(pitch_rad), 0, np.cos(pitch_rad)],
         ])
         #合成回転行列
-        #R_total = R_roll @ R_pitch  # どちらかが正しい
-        R_total = R_pitch @ R_roll  # どちらかが正しい
+        R_total = R_roll @ R_pitch  # どちらかが正しい
+        #R_total = R_pitch @ R_roll  # どちらかが正しい
 
         results = model.predict(color_image, show=True, conf=0.1, imgsz=320, vid_stride=1, stream=False, half=False)
 
@@ -150,17 +149,22 @@ try:
                         #msg_xyz.y = point[1]
                         #msg_xyz.z = point[2]
                         #pub_xyz.publish(msg_xyz)
-                        # RealSenseの座標を一般的な右手系座標での座標に変換
+                        # RealSenseの座標点をNED座標系の座標点に変換
                         x = - point[2]
                         y =   point[0]
                         z = - point[1]
                         cam_point = np.array([x, y, z])
-                        # カメラ視点の傾いた座標をグローバル座標(一般的な右手系)に変換(手前がx,右がy,上がz)
-                        world_point = R_total @ cam_point  # 横の傾きの変換がうまくできてない
+                        # カメラ視点の傾いた座標をグローバル座標(NED座標)に変換(前がx,右がy,下がz)
+                        world_point = R_total @ cam_point
+                        # もとの座標(以前使ってた座標系)に戻す
+                        x_ = -world_point[0]
+                        y_ =  world_point[1]
+                        z_ = -world_point[2]
                         print(f'グローバル座標:\nx= {world_point[0]:.3f},\ny= {world_point[1]:.3f},\nz= {world_point[2]:.3f}')  # 後ろがx、右がy、上がz
-                        msg_xyz.x = world_point[0]
-                        msg_xyz.y = world_point[1]
-                        msg_xyz.z = world_point[2]
+                        # 代入してパブリッシュ
+                        msg_xyz.x = x_
+                        msg_xyz.y = y_
+                        msg_xyz.z = z_
                         pub_xyz.publish(msg_xyz)
                     else:
                         print('距離が測定できませんでした')
