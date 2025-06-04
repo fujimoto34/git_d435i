@@ -22,12 +22,16 @@
 ・rosbag再生
 「ros2 bag play ファイル名」
 「ros2 bag play ファイル名 -l」(--loopの省略形)
+「ros2 bag play ファイル名 --start-offset 時間(秒)」
+「ros2 bag play ファイル名 --start-offset 時間(秒) | ros2 bag record -o ファイル名 -a」
 
 
-・obsで画面録画？
+・obsで画面録画
 「sudo apt install obs-studio」
 「obs」
 画面全体を録画する方法
+
+・SimpleScreenRecorderで画面録画
 
 
 ----------(環境構築)----------
@@ -45,9 +49,11 @@
 「model = YOLO("yolov8n.pt")」
 「results = model("https://ultralytics.com/images/bus.jpg", save=True) 」
 成功したら予測結果がruns/detect/predictに保存される。
+Python対話モードはCtrl+Dで終了
+仮想環境は「deactivate」で終了
 
 
-・RealSnese SDKの環境構築
+・RealSnese SDKの環境構築(ホームディレクトリで行う)
 公開鍵を登録
 「sudo mkdir -p /etc/apt/keyrings」
 「curl -sSf https://librealsense.intel.com/Debian/librealsense.pgp | sudo tee /etc/apt/keyrings/librealsense.pgp > /dev/null」

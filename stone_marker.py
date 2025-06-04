@@ -146,10 +146,10 @@ class StoneMarkerPublisher(Node):
         #marker.lifetime = Duration(sec=1)
         marker.pose.position.x = 1.0
         marker.pose.position.y = 0.0
-        marker.pose.position.z = - 1.0
+        marker.pose.position.z = - 1.05
         marker.scale.x = 2.0
         marker.scale.y = 2.0
-        marker.scale.z = 2.0
+        marker.scale.z = 2.1
         marker.pose.orientation.x = 0.0
         marker.pose.orientation.y = 0.0
         marker.pose.orientation.z = 0.0
@@ -176,11 +176,11 @@ class StoneMarkerPublisher(Node):
         marker.color.a = 1.0
         # 頂点の座標を半時計回りに定義
         marker.points = [
-            Point(x=-1.25, y=-0.5, z=-2.0),  #左上(重機から見て)
-            Point(x=-0.75, y=-0.5, z=-2.0),  #左下
-            Point(x=-0.75, y=0.5, z=-2.0),  #右下
-            Point(x=-1.25, y=0.5, z=-2.0),  #右上
-            Point(x=-1.25, y=-0.5, z=-2.0),  # 始点に戻る
+            Point(x=-1.0, y=-0.5, z=-2.1),  #左上(重機から見て)
+            Point(x=-0.5, y=-0.5, z=-2.1),  #左下
+            Point(x=-0.5, y=0.5, z=-2.1),  #右下
+            Point(x=-1.0, y=0.5, z=-2.1),  #右上
+            Point(x=-1.0, y=-0.5, z=-2.1),  # 始点に戻る
         ]
         self.pub_rectangle_frame.publish(marker)
 

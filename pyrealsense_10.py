@@ -1,5 +1,5 @@
-# 検知した石までの距離と3次元座標(グローバル座標系)をパブリッシュする(フィルターあり)
-# python3 pyrealsense_9.py
+# 検知した石までの距離と3次元座標(グローバル座標系)をパブリッシュする(空間フィルター+時間フィルター)
+# python3 pyrealsense_10.py
 
 import pyrealsense2 as rs
 import numpy as np
@@ -58,6 +58,11 @@ hole_filling = rs.hole_filling_filter()
 # disparity
 depth_to_disparity = rs.disparity_transform(True)
 disparity_to_depth = rs.disparity_transform(False)
+# 時間的な平滑化フィルターの準備
+temporal = rs.temporal_filter()
+temporal.set_option(rs.option.filter_smooth_alpha, 0.4)  # 1〜0で、1に近いほど今の値を優先、0に近いほど前の値を重視。デフォルトは0.4
+temporal.set_option(rs.option.filter_smooth_delta, 20)  # 何mm以下の差に対してフィルターを施すか。1〜100で、デフォルトは20。
+#temporal.set_option(rs.option.persistency_mode, 3)  # 深度データが欠損した場合に時間的な補完をする
 
 try:
     while True:
@@ -79,6 +84,9 @@ try:
         filter_frame = spatial.process(filter_frame)
         filter_frame = disparity_to_depth.process(filter_frame)
         filter_frame = hole_filling.process(filter_frame)
+        # 時間的な平滑化フィルターをかける
+        filter_frame = temporal.process(filter_frame)
+        # キャスト(型の変換)
         depth_frame = filter_frame.as_depth_frame()
 
         # 画像データに変換
