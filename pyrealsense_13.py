@@ -16,7 +16,7 @@ from geometry_msgs.msg import Point
 import time
 
 
-model = YOLO('stone_best.pt')
+model = YOLO('runs/detect/train10/weights/best.pt')
 #print(model.names)
 
 # カメラの設定
@@ -120,8 +120,8 @@ try:
         # 傾き表示(NED座標系)
         print(f"カメラのピッチ角（前後の傾き）: {pitch:.2f} 度")  # 後ろが正(y軸周りにzからxに向かう方向が正)
         print(f"カメラのロール角（左右の傾き）: {roll:.2f} 度")  # 右が正(x軸周りにyからzに向かう方向が正)
-        pitch = -55.0 * np.pi / 180  # 前に55度で固定
-        roll = 0.0 * np.pi /180  # 左右0度で固定
+        pitch_rad = -55.0 * np.pi / 180  # 前に55度で固定
+        roll_rad = 0.0 * np.pi /180  # 左右0度で固定
         # x軸回り(ロール)の回転行列(右手系のオブジェクト回転のもの(観測系の回転ではなく))
         R_roll = np.array([
             [1, 0, 0],
@@ -171,14 +171,14 @@ try:
                         x = point[2]
                         y = point[0]
                         z = point[1]
-                        cam_point = np.array([x, y, z])
                         # カメラ視点の傾いた座標をグローバル座標(NED座標)に変換(前がx,右がy,下がz)
+                        cam_point = np.array([x, y, z])
                         world_point = R_total @ cam_point
                         # もとの座標(以前使ってた座標系)に戻す
                         x_ = - world_point[0]
                         y_ =   world_point[1]
                         z_ = - world_point[2]
-                        print(f'グローバル座標:\nx= {world_point[0]:.3f},\ny= {world_point[1]:.3f},\nz= {world_point[2]:.3f}')  # 前がx、右がy、下がz (RViz上ではxとzの符号が変わり、後ろがx、右がy、上がz)
+                        print(f'グローバル座標:\nx= {world_point[0]:.3f},\ny= {world_point[1]:.3f},\nz= {world_point[2]:.3f}')  # 前がx、右がy、下がz (RViz上ではxとzの符号が変わり、後ろがx、右がy、上がz(上で変換してるから))
                         # 代入してパブリッシュ
                         msg_xyz.x = x_
                         msg_xyz.y = y_

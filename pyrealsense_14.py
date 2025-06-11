@@ -11,12 +11,13 @@ import rclpy
 from rclpy.node import Node
 #from std_msgs.msg import String
 from std_msgs.msg import Float64
-from geometry_msgs.msg import Point
+#from geometry_msgs.msg import Point
+from geometry_msgs.msg import PointStamped  # 2点同時パブリッシュに使うPoint型
 
 import time
 
 
-model = YOLO('wood_best.pt')
+model = YOLO('runs/obb/train/weights/best.pt')
 #print(model.names)
 
 # カメラの設定
@@ -33,10 +34,12 @@ align = rs.align(rs.stream.color)
 # ROS2でPublisherを作成
 rclpy.init()
 node = Node("wood1")
-pub_d = node.create_publisher(Float64, "stone_dis", 10)
-pub_xyz = node.create_publisher(Point, "stone_xyz", 10)
+pub_d = node.create_publisher(Float64, "wood_dis", 10)
+pub_xyz_A = node.create_publisher(PointStamped, "wood_xyz_A", 10)
+pub_xyz_B = node.create_publisher(PointStamped, "wood_xyz_B", 10)
 msg_d = Float64()
-msg_xyz = Point()
+msg_xyz_A = PointStamped()
+msg_xyz_B = PointStamped()  # AとBで区別したほうが安全らしい
 
 # stream開始
 pipeline = rs.pipeline()
@@ -120,8 +123,8 @@ try:
         # 傾き表示(NED座標系)
         print(f"カメラのピッチ角（前後の傾き）: {pitch:.2f} 度")  # 後ろが正(y軸周りにzからxに向かう方向が正)
         print(f"カメラのロール角（左右の傾き）: {roll:.2f} 度")  # 右が正(x軸周りにyからzに向かう方向が正)
-        pitch = -55.0 * np.pi / 180  # 前に55度で固定
-        roll = 0.0 * np.pi /180  # 左右0度で固定
+        pitch_rad = -55.0 * np.pi / 180  # 前に55度で固定
+        roll_rad = 0.0 * np.pi /180  # 左右0度で固定
         # x軸回り(ロール)の回転行列(右手系のオブジェクト回転のもの(観測系の回転ではなく))
         R_roll = np.array([
             [1, 0, 0],
@@ -143,47 +146,83 @@ try:
         #print(results[0].names)
 
         for result in results:
-             for box in result.boxes:
-                 if int(box.cls) == 0:  # class 0 is wood
-                    x1, y1, x2, y2 = map(int, box.xyxy[0].tolist())  # 座標を整数に変換。x1,y1は左上、x2,y2は左下
+             for obb in result.obb:
+                 if int(obb.cls) == 0:  # class 0 is wood
+                    x1, y1, x2, y2 = map(int, obb.xyxy[0].tolist())  # 座標を整数に変換。x1,y1は左上、x2,y2は左下
                     # 画像データに検出ボックスを書き込む
                     cv2.rectangle(color_image, (x1, y1), (x2, y2), (255, 0, 0), 3)  # 検出ボックス描画
-                    label = f"{result.names[int(box.cls)]} {box.conf[0]:.2f}"  # テキストを定義
+                    label = f"{result.names[int(obb.cls)]} {obb.conf[0]:.2f}"  # テキストを定義
                     (text_width, text_height), baseline = cv2.getTextSize(label, cv2.FONT_HERSHEY_SIMPLEX, 1, 2)  # テキストサイズを取得
                     cv2.rectangle(color_image, (x1, y1 - text_height - 5), (x1 + text_width, y1), (255, 0, 0), -1)  # 文字の背景の四角(青の塗りつぶし)
                     cv2.putText(color_image, label, (x1, y1 - 5), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2)  # テキスト
-                    # 物体までの距離を取得
-                    cx = int((x1 + x2) / 2)  # cx is center_x
-                    cy = int((y1 + y2) / 2)  # cy is center_y
-                    distance = depth_frame.get_distance(cx, cy)
-                    if distance > 0:
-                        print(f'距離 = {distance:.3f}[m]')
-                        msg_d.data = distance
-                        pub_d.publish(msg_d)
+                    # 木材の両端までの距離を取得
+                    cx, cy, w, h, theta = obb.xywhr[0].tolist()  # 中心座標・幅・高さ・角度を取得
+                    print(f'obb_theta={theta*180/np.pi:.1f} degrees')
+                    if w <= h:  # wを常に長辺にする
+                        w, h = h, w
+                        theta = theta + np.pi/2
+                    print(f'obb_theta={theta*180/np.pi:.1f} degrees')  # thetaを表示
+                    dx = (w / 2) * np.cos(theta)
+                    dy = (w / 2) * np.sin(theta)
+                    xA = cx + dx
+                    yA = cy + dy
+                    xB = cx - dx
+                    yB = cy - dy
+                    height, width = color_image.shape[0], color_image.shape[1]  # カメラ画像の縦幅、横幅を取得
+                    xA = int(min(max(xA, 0), width -1))  # 両端がカメラの枠外になったときの距離取得エラーを防ぐ
+                    yA = int(min(max(yA, 0), height -1))
+                    xB = int(min(max(xB, 0), width -1))
+                    yB = int(min(max(yB, 0), height -1))
+                    #cx = int(min(max(cx, 0), width - 1))  # 中心がカメラの枠外になったときの距離取得エラーを防ぐ
+                    #cy = int(min(max(cy, 0), height - 1))  # 中心がカメラの枠外になったときの距離取得エラーを防ぐ
+                    cv2.circle(color_image, (xA, yA), 5, (0, 0, 255), -1)  # 両端にマークを描画
+                    cv2.circle(color_image, (xB, yB), 5, (0, 0, 255), -1)  # 両端にマークを描画
+                    distanceA = depth_frame.get_distance(xA, yA)
+                    distanceB = depth_frame.get_distance(xB, yB)
+                    if distanceA > 0 and distanceB > 0:
+                        #print(f'距離 = {distance:.3f}[m]')
+                        #msg_d.data = distance
+                        #pub_d.publish(msg_d)
                         # 3次元座標を取得
-                        point = rs.rs2_deproject_pixel_to_point(color_intr , [cx,cy], distance)
-                        print(f'座標: (x={point[0]:.3f}, y={point[1]:.3f}, z={point[2]:.3f})')  # RealSenseの点の座標は、右がx正、下がy正、前がz正
+                        pointA = rs.rs2_deproject_pixel_to_point(color_intr , [xA,yA], distanceA)
+                        pointB = rs.rs2_deproject_pixel_to_point(color_intr , [xB,yB], distanceB)
+                        #print(f'座標: (x={point[0]:.3f}, y={point[1]:.3f}, z={point[2]:.3f})')  # RealSenseの点の座標は、右がx正、下がy正、前がz正
                         #msg_xyz.x = point[0]
                         #msg_xyz.y = point[1]
                         #msg_xyz.z = point[2]
                         #pub_xyz.publish(msg_xyz)
-                        # RealSenseの座標点をNED座標系の座標点に変換
-                        x = point[2]
-                        y = point[0]
-                        z = point[1]
-                        cam_point = np.array([x, y, z])
-                        # カメラ視点の傾いた座標をグローバル座標(NED座標)に変換(前がx,右がy,下がz)
-                        world_point = R_total @ cam_point
-                        # もとの座標(以前使ってた座標系)に戻す
-                        x_ = - world_point[0]
-                        y_ =   world_point[1]
-                        z_ = - world_point[2]
-                        print(f'グローバル座標:\nx= {world_point[0]:.3f},\ny= {world_point[1]:.3f},\nz= {world_point[2]:.3f}')  # 前がx、右がy、下がz (RViz上ではxとzの符号が変わり、後ろがx、右がy、上がz)
-                        # 代入してパブリッシュ
-                        msg_xyz.x = x_
-                        msg_xyz.y = y_
-                        msg_xyz.z = z_
-                        pub_xyz.publish(msg_xyz)
+                        # 座標変換
+                        def transform_point(point):
+                            # RealSenseの座標点をNED座標系の座標点に変換
+                            x = point[2]
+                            y = point[0]
+                            z = point[1]
+                            # カメラ視点の傾いた座標をグローバル座標(NED座標)に変換(前がx,右がy,下がz)
+                            cam_point = np.array([x, y, z])
+                            world_point = R_total @ cam_point
+                            # もとの座標(以前使ってた座標系)に戻す
+                            x_ = - world_point[0]
+                            y_ =   world_point[1]
+                            z_ = - world_point[2]
+                            return x_, y_, z_
+                        # 変換
+                        x_A, y_A, z_A = transform_point(pointA)
+                        x_B, y_B, z_B = transform_point(pointB)
+                        #print(f'グローバル座標:\nx= {world_point[0]:.3f},\ny= {world_point[1]:.3f},\nz= {world_point[2]:.3f}')  # 前がx、右がy、下がz (RViz上ではxとzの符号が変わり、後ろがx、右がy、上がz(上で変換してるから))
+                        # 時間を揃えてパブリッシュ
+                        now_time = node.get_clock().now().to_msg()  #1回だけ現在時刻を取得。Clock().now.to_msg()よりも推奨される書き方(importも不要)
+                        msg_xyz_A.header.stamp = now_time  # 時間合わせ
+                        msg_xyz_A.header.frame_id = 'map'  # フレームid合わせ
+                        msg_xyz_A.point.x = x_A  # PointStamped型の座標代入は.pointが必要
+                        msg_xyz_A.point.y = y_A
+                        msg_xyz_A.point.z = z_A
+                        pub_xyz_A.publish(msg_xyz_A)
+                        msg_xyz_B.header.stamp = now_time  # 時間合わせ
+                        msg_xyz_B.header.frame_id = 'map'  # フレームid合わせ
+                        msg_xyz_B.point.x = x_B
+                        msg_xyz_B.point.y = y_B
+                        msg_xyz_B.point.z = z_B
+                        pub_xyz_B.publish(msg_xyz_B)
                     else:
                         print('距離が測定できませんでした')
         
