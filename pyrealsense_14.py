@@ -17,7 +17,7 @@ from geometry_msgs.msg import PointStamped  # 2点同時パブリッシュに使
 import time
 
 
-model = YOLO('runs/obb/train/weights/best.pt')
+model = YOLO('wood_best.pt')
 #print(model.names)
 
 # カメラの設定

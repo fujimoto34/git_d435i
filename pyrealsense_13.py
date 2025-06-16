@@ -16,7 +16,7 @@ from geometry_msgs.msg import Point
 import time
 
 
-model = YOLO('runs/detect/train10/weights/best.pt')
+model = YOLO('stone_best.pt')
 #print(model.names)
 
 # カメラの設定
